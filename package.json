@@ -1,0 +1,29 @@
+{
+  "name": "dineout",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.34.9",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @dineout/api dev",
+    "dev:web": "pnpm --filter @dineout/web dev",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @dineout/api prisma:generate",
+    "db:migrate": "pnpm --filter @dineout/api prisma:migrate",
+    "db:seed": "pnpm --filter @dineout/api seed",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm --filter @dineout/api test"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

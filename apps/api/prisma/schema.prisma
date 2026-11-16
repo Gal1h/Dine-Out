@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  admin
+  member
+}
+
+enum GroupRole {
+  admin
+  mod
+  member
+}
+
+enum ItemType {
+  food
+  drink
+}
+
+enum SummarySource {
+  manual
+  gemini
+}
+
+model User {
+  id                 String    @id @db.Char(36)
+  accountType        AccountType
+  email              String?   @unique @db.VarChar(255)
+  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  displayName        String    @map("display_name") @db.VarChar(100)
+  geminiKeyEncrypted Bytes?    @map("gemini_key_encrypted") @db.VarBinary(512)
+  geminiKeyIv        Bytes?    @map("gemini_key_iv") @db.VarBinary(16)
+  geminiKeyTag       Bytes?    @map("gemini_key_tag") @db.VarBinary(16)
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  memberships   GroupMember[]
+  ownedGroups   Group[]          @relation("GroupAdmin")
+  orders        VoteOrder[]
+  refreshTokens RefreshToken[]
+  billsCreated  Bill[]           @relation("BillCreator")
+  summariesMade OrderSummary[]   @relation("SummaryCreator")
+
+  @@map("users")
+}
+
+model Group {
+  id        String   @id @db.Char(36)
+  name      String   @db.VarChar(100)
+  adminId   String   @map("admin_id") @db.Char(36)
+  timezone  String   @default("Asia/Jakarta") @db.VarChar(40)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin   User          @relation("GroupAdmin", fields: [adminId], references: [id])
+  members GroupMember[]
+  votes   Vote[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId    String    @map("group_id") @db.Char(36)
+  userId     String    @map("user_id") @db.Char(36)
+  role       GroupRole
+  username   String?   @db.VarChar(50)
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@unique([groupId, username])
+  @@map("group_members")
+}
+
+model Vote {
+  id            String   @id @db.Char(36)
+  groupId       String   @map("group_id") @db.Char(36)
+  storeName     String   @map("store_name") @db.VarChar(150)
+  mapsUrl       String   @map("maps_url") @db.VarChar(500)
+  menuText      String?  @map("menu_text") @db.Text
+  menuImagePath String?  @map("menu_image_path") @db.VarChar(255)
+  voteDeadline  DateTime @map("vote_deadline")
+  orderDeadline DateTime @map("order_deadline")
+  createdBy     String   @map("created_by") @db.Char(36)
+  updatedBy     String?  @map("updated_by") @db.Char(36)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  group     Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  orders    VoteOrder[]
+  summaries OrderSummary[]
+  bills     Bill[]
+
+  @@index([groupId])
+  @@map("votes")
+}
+
+model VoteOrder {
+  id          String   @id @db.Char(36)
+  voteId      String   @map("vote_id") @db.Char(36)
+  userId      String   @map("user_id") @db.Char(36)
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  vote  Vote           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items VoteOrderItem[]
+
+  @@unique([voteId, userId])
+  @@map("vote_orders")
+}
+
+model VoteOrderItem {
+  id       String   @id @db.Char(36)
+  orderId  String   @map("order_id") @db.Char(36)
+  itemType ItemType @map("item_type")
+  name     String   @db.VarChar(150)
+  qty      Int      @db.SmallInt
+  note     String?  @db.VarChar(255)
+
+  order VoteOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("vote_order_items")
+}
+
+model OrderSummary {
+  id        String        @id @db.Char(36)
+  voteId    String        @map("vote_id") @db.Char(36)
+  source    SummarySource
+  createdBy String        @map("created_by") @db.Char(36)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  vote  Vote               @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  maker User               @relation("SummaryCreator", fields: [createdBy], references: [id])
+  items OrderSummaryItem[]
+  bills Bill[]
+
+  @@index([voteId])
+  @@map("order_summaries")
+}
+
+model OrderSummaryItem {
+  id        String   @id @db.Char(36)
+  summaryId String   @map("summary_id") @db.Char(36)
+  itemType  ItemType @map("item_type")
+  name      String   @db.VarChar(150)
+  totalQty  Int      @map("total_qty")
+
+  summary OrderSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+
+  @@index([summaryId])
+  @@map("order_summary_items")
+}
+
+model Bill {
+  id        String   @id @db.Char(36)
+  voteId    String   @map("vote_id") @db.Char(36)
+  summaryId String   @map("summary_id") @db.Char(36)
+  createdBy String   @map("created_by") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  vote    Vote           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  summary OrderSummary   @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  maker   User           @relation("BillCreator", fields: [createdBy], references: [id])
+  prices  BillPrice[]
+  totals  BillUserTotal[]
+
+  @@index([voteId])
+  @@map("bills")
+}
+
+model BillPrice {
+  id       String   @id @db.Char(36)
+  billId   String   @map("bill_id") @db.Char(36)
+  itemType ItemType @map("item_type")
+  name     String   @db.VarChar(150)
+  price    BigInt
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
+  @@map("bill_prices")
+}
+
+model BillUserTotal {
+  id           String @id @db.Char(36)
+  billId       String @map("bill_id") @db.Char(36)
+  userId       String @map("user_id") @db.Char(36)
+  foodTotal    BigInt @default(0) @map("food_total")
+  drinkTotal   BigInt @default(0) @map("drink_total")
+  foodSubsidy  BigInt @default(0) @map("food_subsidy")
+  drinkSubsidy BigInt @default(0) @map("drink_subsidy")
+  foodPayable  BigInt @default(0) @map("food_payable")
+  drinkPayable BigInt @default(0) @map("drink_payable")
+  payable      BigInt @default(0)
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@unique([billId, userId])
+  @@map("bill_user_totals")
+}
+
+model RefreshToken {
+  id        String    @id @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  groupId   String?   @map("group_id") @db.Char(36)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

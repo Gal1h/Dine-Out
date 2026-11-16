@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 38 33% 97%;
+    --foreground: 220 18% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 12%;
+
+    --muted: 36 22% 93%;
+    --muted-foreground: 220 8% 42%;
+
+    --border: 30 14% 86%;
+    --input: 30 12% 80%;
+
+    --primary: 14 62% 43%;
+    --primary-foreground: 40 50% 98%;
+    --primary-soft: 18 68% 94%;
+
+    --secondary: 36 18% 90%;
+    --secondary-foreground: 220 18% 20%;
+
+    --accent: 186 28% 36%;
+    --accent-foreground: 40 50% 98%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 150 38% 32%;
+    --success-foreground: 140 40% 97%;
+
+    --ring: 14 62% 43%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 220 16% 9%;
+    --foreground: 36 20% 94%;
+
+    --card: 220 14% 12%;
+    --card-foreground: 36 20% 94%;
+
+    --muted: 220 12% 17%;
+    --muted-foreground: 220 8% 66%;
+
+    --border: 220 10% 22%;
+    --input: 220 10% 28%;
+
+    --primary: 16 66% 55%;
+    --primary-foreground: 20 40% 10%;
+    --primary-soft: 16 40% 18%;
+
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 36 20% 92%;
+
+    --accent: 186 30% 50%;
+    --accent-foreground: 200 40% 10%;
+
+    --destructive: 0 58% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 150 34% 44%;
+    --success-foreground: 150 30% 8%;
+
+    --ring: 16 66% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
